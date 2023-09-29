@@ -1,0 +1,73 @@
+/* 添加整体样式 */
+body {
+    background: linear-gradient(to bottom, #0074bf, #005ca3);
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    color: #ffffff;
+}
+
+.container {
+    width: 80%;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+h1 {
+    text-align: center;
+}
+#graph{
+    background: white;
+}
+/* 样式化输入表单 */
+form {
+    margin-bottom: 20px;
+}
+
+label {
+    display: block;
+    margin-bottom: 5px;
+}
+
+textarea {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    background-color: #ffffff;
+    color: #000000;
+}
+
+input[type="submit"].btn-blue {
+    background-color: #0074bf;
+    color: #ffffff;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+input[type="submit"].btn-blue:hover {
+    background-color: #005ca3;
+}
+
+/* 样式化结果容器 */
+.result-container {
+
+    padding: 20px;
+    border-radius: 4px;
+
+    margin-top: 20px;
+}
+
+/* 样式化列表 */
+.result-container ul {
+    list-style-type: none;
+    padding: 0;
+    color: black;
+}
+
+.result-container li {
+    margin-bottom: 5px;
+    color: black;
+}

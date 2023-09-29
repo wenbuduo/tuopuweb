@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>拓扑排序应用网站</title>
+    <!-- 导入ECharts的JavaScript库 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/echarts/5.3.2/echarts.min.js"></script>
+    <link rel="stylesheet" href="static/indexcss.css">
+</head>
+
+<body>
+    <div class="container">
+        <h1>关系图生成和拓扑排序</h1>
+        <form id="inputForm">
+            <label for="data_input">请输入节点关系（格式如&lt;A,B&gt;，每行一个关系）：</label>
+            <br>
+            <textarea id="data_input" rows="5" cols="40"></textarea>
+            <input type="submit" value="生成关系图和拓扑排序" class="btn-blue">
+        </form>
+        <form id="inputfileForm" method="POST" enctype="multipart/form-data" action="/upload">
+            <label for="data_file">请上传一个txt文件：</label>
+            <input type="file" name="data_file" id="data_file" accept=".txt">
+            <input type="submit" value="生成关系图和拓扑排序" class="btn-blue">
+        </form>
+        <h2>生成的关系图：</h2>
+        <div id="graph" style="width: 800px; height: 600px;"></div>
+        <h2>拓扑排序结果：</h2>
+        <div class="result-container" style = "background-color: white">
+            <div id="topologicalSortResult">
+                <ul style="color: black">
+                    {% for node in topological_sort_result %}
+                        {% if node != '---' %}
+                        <text>{{ node }}</text>
+                        <text> -></text>
+                        {% endif %}
+                        {% if node == "---" %}
+                            <text><br></text>
+                        {% endif %}
+                    {% endfor %}
+                </ul>
+            </div> <!-- 添加一个容器用于显示结果 -->
+        <div>
+    <a href="#" onclick="downloadResult()"><input type="submit" value="保存排序结果为txt文件" class="btn-blue"></a>
+
+</div>
+        </div>
+    </div>
+
+<script>
+    // 获取表单元素和容器元素
+    const form = document.getElementById('inputForm');
+    // const form1 = document.getElementById('inputfileForm');
+    const dataInput = document.getElementById('data_input');
+    const graphContainer = document.getElementById('graph');
+    const topologicalSortResultContainer = document.getElementById('topologicalSortResult');
+    window.onload = function () {
+        clearFileInput();
+        clearGraphAndResult();
+    }
+    // 表单提交事件处理函数
+    form.addEventListener('submit', function (event) {
+        event.preventDefault(); // 阻止表单默认提交行为
+
+        // 获取用户输入的节点数据
+        const inputData = dataInput.value.trim();
+
+        // 发送POST请求到服务器
+        fetch('/generate', {
+            method: 'POST',
+            body: new URLSearchParams({
+                data_input: inputData
+            }),
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded'
+            }
+        })
+            .then(response => response.json()) // 解析响应的JSON数据
+            .then(data => {
+                //判断输入的数据格式
+                if(!data.isvalid){
+                    window.alert("输入的数据格式有误！")
+                }
+                else {
+                    // 更新关系图
+                    updateGraph(data.graph_data);
+
+                    // 显示拓扑排序结果
+                    displayTopologicalSortResult(data.topological_sort_result);
+                }
+            })
+            .catch(error => {
+                console.error('请求失败:', error);
+            });
+    });
+    // 函数：更新关系图
+    function updateGraph(graphData) {
+        const chart = echarts.init(graphContainer); // 初始化ECharts图表
+        window.addEventListener('resize', function () {
+            chart.resize();
+        });
+
+        const option = {
+            series: [{
+                toolbox: {
+                    feature: {
+                        saveAsImage: {
+                            title: '保存为图片',
+                            type: 'png', // 图片格式，可以改成 'jpeg'
+                        },
+                    },
+                },
+                type: 'graph',
+                layout: 'force',
+                animation: false,
+                roam: true,
+                draggable: true,
+                edgeSymbol: ['circle', 'arrow'], // 使用箭头作为连线符号
+                edgeSymbolSize: [4, 20], // 箭头大小，根据需要调整
+                label: {
+                    show: true,
+                    formatter: '{b}', // 使用节点名称作为标签文本
+                    position: 'right', // 可根据需要调整标签位置
+                    fontSize: 12, // 可根据需要调整字体大小
+                },
+                force: {
+                    edgeLength: 150,
+                    repulsion: 200
+                },
+                data: graphData.nodes,
+                links: graphData.edges
+            }]
+        };
+
+        chart.setOption(option); // 设置图表选项
+    }
+
+  // 函数：显示拓扑排序结果
+function displayTopologicalSortResult(result) {
+    if (result.length > 0) {
+            topologicalSortResultContainer.innerHTML = '<p style="color: black">' +result.join("->")+ '</p>';
+    }
+    else {
+        topologicalSortResultContainer.innerHTML = '<p>无法进行拓扑排序，存在循环依赖关系。</p>';
+    }
+}
+
+    //函数：下载排序结果
+    function downloadResult() {
+        fetch('/download')
+        .then(response => response.blob())
+        .then(blob => {
+            const url = window.URL.createObjectURL(new Blob([blob]));
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'topological_sort_result.txt';
+            a.click();
+        });
+    }
+</script>
+<script type="text/javascript">
+    // 通过Flask传递的JSON数据
+    var graphData = {{graph_data | safe}};
+
+    // 渲染关系图
+    var chart = echarts.init(document.getElementById('graph'));
+    var option = {
+        series: [{
+            toolbox: {
+                feature: {
+                    saveAsImage: {
+                        title: '保存为图片',
+                        type: 'png', // 图片格式，可以改成 'jpeg'
+                    },
+                },
+            },
+            type: 'graph',
+            layout: 'force',
+            animation: false,
+            roam: true,
+            draggable: true,
+            edgeSymbol: ['circle', 'arrow'], // 使用箭头作为连线符号
+            edgeSymbolSize: [4, 20], // 箭头大小，根据需要调整
+            label: {
+                show: true,
+                formatter: '{b}', // 使用节点名称作为标签文本
+                position: 'right', // 可根据需要调整标签位置
+                fontSize: 12, // 可根据需要调整字体大小
+            },
+            force: {
+                edgeLength: 150,
+                repulsion: 200
+            },
+            data: graphData.nodes,
+            links: graphData.edges
+        }]
+    };
+    chart.setOption(option);
+
+</script>
+
+</body>
+
+</html>
